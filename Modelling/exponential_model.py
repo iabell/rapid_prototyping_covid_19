@@ -9,14 +9,14 @@ from itertools import permutations
 import csv 
 
 # model definition
-def simple_exponential_growth(initial_population=1, r_eff=1.5, num_weeks=4, generation_interval=4.7):
+def simple_exponential_growth(initial_population=1, r_eff=1.5, generation_interval=4.7):
     daily_multiplier = r_eff ** (1 / generation_interval)
-    prev_list = [initial_population * (daily_multiplier ** day) for day in range(7*num_weeks)]
+    prev_list = [initial_population * (daily_multiplier ** day) for day in range(7)]
     return prev_list
 
 # detection probability definition
-def detection_probability(test_schedule, prevalence, sensitivity, workplace_size):
-    probability_of_detection = 1 - np.prod([(1 - sensitivity)**(prevalence[i]*workplace_size) if test_schedule[i]!=0 else 1 for i in range(len(prevalence))])
+def detection_probability(test_schedule, prevalence, sensitivity):
+    probability_of_detection = 1 - np.prod([(1 - sensitivity)**(prevalence[i]) if test_schedule[i]!=0 else 1 for i in range(len(prevalence))])
     return probability_of_detection
 
 # creating weekly schedule permutations
@@ -56,19 +56,21 @@ def define_testing_schedule(per_week_schedule, prop_tested_per_week, workplace_s
 
     return total_testing_schedule
 
-
-def varying_growth_rate_high(endpoints, step, num_weeks, I0, generation_interval, testing_days_per_week, workplace_size, prop_tested_per_week, sensitivity):
+# data for Figure 1a
+def varying_growth_rate(endpoints, step, num_weeks, I0, generation_interval, testing_days_per_week, workplace_size, prop_tested_per_week, sensitivity):
     growth_rate_options = [i/100 for i in list(range(int(endpoints[0]*100), int(endpoints[1]*100), int(step*100)))]
     output = []
+
+    # defining schedules
     schedules = weekly_schedule_permutations(testing_days_per_week)
-    testing_schedules = define_testing_schedule(schedules, prop_tested_per_week, workplace_size, num_weeks)
-    # testing_schedules = phase_three_a_scheduling(workplace_size, testing_days_per_week, prop_tested_per_week, num_weeks)
+    testing_schedules = define_testing_schedule(schedules, prop_tested_per_week, workplace_size)
+    
     for i in growth_rate_options:
         individual_output = []
-        infected_list = simple_exponential_growth(I0, i, num_weeks, generation_interval)
-        prevalence_list = [j/workplace_size for j in infected_list]
+        infected_list = simple_exponential_growth(I0, i, generation_interval)
+        # prevalence_list = [j for j in infected_list]
         for permutation in testing_schedules:
-            individual_output.append(detection_probability(permutation, prevalence_list, sensitivity, workplace_size))
+            individual_output.append(detection_probability(permutation, infected_list, sensitivity))
         output.append(sum(individual_output)/len(individual_output))
     return output
 
@@ -78,7 +80,7 @@ def varying_sensitivity(endpoints, step, num_weeks, Reff, I0, generation_interva
     schedules = weekly_schedule_permutations(testing_days_per_week)
     #high coverage means if testing occurs, entire workplace is tested
     testing_schedules = [num_weeks*sched for sched in schedules]
-    infected_list = simple_exponential_growth(I0, Reff, num_weeks, generation_interval)
+    infected_list = simple_exponential_growth(I0, Reff, generation_interval)
     prevalence_list = [j/workplace_size for j in infected_list]
     for sen in sensitivity_options:
         individual_output = []
@@ -89,7 +91,7 @@ def varying_sensitivity(endpoints, step, num_weeks, Reff, I0, generation_interva
 
 def varying_testing_frequency_high_coverage(num_weeks,I0,Reff,generation_interval,testing_days_per_week,sensitivity,workplace_size):
     output = [] #average, min, max
-    infected_list = simple_exponential_growth(I0, Reff, num_weeks, generation_interval)
+    infected_list = simple_exponential_growth(I0, Reff, generation_interval)
     prevalence_list = [j/workplace_size for j in infected_list]
     for days in testing_days_per_week:
         individual_output = []
@@ -106,10 +108,8 @@ def varying_testing_frequency_high_coverage(num_weeks,I0,Reff,generation_interva
     return output
 
 high_coverage = True
-varying_workplace_size_plot = False
-prop_tested_sensitivity_plot = False
-growth_rate_sensitivity_plot = False
-test_days_per_week_sensitivity = True
+growth_rate_sensitivity_plot = True
+test_days_per_week_sensitivity = False
 # reff_sensitivity = True
 testing_frequency_variance_plot = False
 
@@ -175,7 +175,7 @@ if high_coverage:
         for weeks in num_weeks:
             data = []
             for option in sensitivity_options:
-                data.append(varying_growth_rate_high([1.0, 2.4], 0.01, weeks, I0, generation_interval, testing_days_per_week, workplace_size, prop_tested_per_week, option))
+                data.append(varying_growth_rate([1.0, 2.4], 0.01, weeks, I0, generation_interval, testing_days_per_week, workplace_size, prop_tested_per_week, option))
             timeframe_data.append(data)
         
         plt.figure("2")
