@@ -56,12 +56,6 @@ def define_testing_schedule(per_week_schedule, prop_tested_per_week, workplace_s
 
     return total_testing_schedule
 
-def generate_permutations(test_days):
-    test_schedule = []
-    for i in range(7):
-        test_schedule.append([test_days[(j + i)% 7] for j in range(7)])
-    return test_schedule
-
 
 def varying_growth_rate_high(endpoints, step, num_weeks, I0, generation_interval, testing_days_per_week, workplace_size, prop_tested_per_week, sensitivity):
     growth_rate_options = [i/100 for i in list(range(int(endpoints[0]*100), int(endpoints[1]*100), int(step*100)))]
