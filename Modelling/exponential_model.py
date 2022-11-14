@@ -8,17 +8,18 @@ from itertools import count
 from itertools import permutations
 import csv 
 
+# model definition
 def simple_exponential_growth(initial_population=1, r_eff=1.5, num_weeks=4, generation_interval=4.7):
     daily_multiplier = r_eff ** (1 / generation_interval)
     prev_list = [initial_population * (daily_multiplier ** day) for day in range(7*num_weeks)]
     return prev_list
 
-def high_coverage_detection_probability(test_schedule, prevalence, sensitivity,workplace_size):
-    thingo = [(1 - sensitivity)**prevalence[i] if test_schedule[i]!=0 else 1 for i in range(len(prevalence))]
+# detection probability definition
+def detection_probability(test_schedule, prevalence, sensitivity, workplace_size):
     probability_of_detection = 1 - np.prod([(1 - sensitivity)**(prevalence[i]*workplace_size) if test_schedule[i]!=0 else 1 for i in range(len(prevalence))])
     return probability_of_detection
 
-
+# creating weekly schedule permutations
 def weekly_schedule_permutations(testing_days_per_week):
     if testing_days_per_week == 7:
         return [[1,1,1,1,1,1,1]]
@@ -32,7 +33,8 @@ def weekly_schedule_permutations(testing_days_per_week):
 
     return per_week_schedule
 
-def define_testing_schedule(per_week_schedule, prop_tested_per_week, workplace_size, num_weeks):
+# creating testing schedule
+def define_testing_schedule(per_week_schedule, prop_tested_per_week, workplace_size):
     testing_schedule = []
 
     total_tests_per_week = np.round(workplace_size * prop_tested_per_week)
@@ -50,53 +52,15 @@ def define_testing_schedule(per_week_schedule, prop_tested_per_week, workplace_s
                 if remainder == 0:
                     break
 
-
-    total_testing_schedule = [num_weeks*schedule for schedule in testing_schedule]
+    total_testing_schedule = [schedule for schedule in testing_schedule]
 
     return total_testing_schedule
-
-def phase_three_a_scheduling(workplace_size, number_of_testing_days,prop_tested_per_week, num_weeks):
-    test_days = None
-    if number_of_testing_days == 1:
-        test_days = [1, 0, 0, 0, 0, 0, 0]
-    if number_of_testing_days == 2:
-        test_days = [1, 0, 0, 0, 1, 0, 0]
-    if number_of_testing_days == 3:
-        test_days = [1, 0, 1, 0, 1, 0, 0]
-    if number_of_testing_days == 4:
-        test_days = [1, 1, 0, 1, 1, 0, 0]
-    if number_of_testing_days == 5:
-        test_days = [1, 1, 1, 1, 1, 0, 0]
-    if number_of_testing_days == 6:
-        test_days = [1, 1, 1, 1, 1, 1, 0]
-    if number_of_testing_days == 7:
-        test_days = [1, 1, 1, 1, 1, 1, 1]
-    total_tests_per_week = np.round(workplace_size * prop_tested_per_week)
-    average_tests_per_testing_day = int(np.ceil(total_tests_per_week/testing_days_per_week))
-    testing_days_schedule = generate_permutations(test_days)
-    weekly_testing_schedule = [[average_tests_per_testing_day*day for day in testing_day] for testing_day in testing_days_schedule]
-    if sum(weekly_testing_schedule[0]) > total_tests_per_week:
-        for i in range(len(weekly_testing_schedule)):
-            remainder = sum(weekly_testing_schedule[i]) - total_tests_per_week
-            for j in range(7):
-                if weekly_testing_schedule[i][j] != 0:
-                    weekly_testing_schedule[i][j] -= 1
-                    remainder -= 1
-                if remainder == 0:
-                    break
-
-    testing_schedule = [num_weeks * schedule for schedule in weekly_testing_schedule]
-    return testing_schedule
 
 def generate_permutations(test_days):
     test_schedule = []
     for i in range(7):
         test_schedule.append([test_days[(j + i)% 7] for j in range(7)])
     return test_schedule
-
-
-
-
 
 
 def varying_growth_rate_high(endpoints, step, num_weeks, I0, generation_interval, testing_days_per_week, workplace_size, prop_tested_per_week, sensitivity):
@@ -110,7 +74,7 @@ def varying_growth_rate_high(endpoints, step, num_weeks, I0, generation_interval
         infected_list = simple_exponential_growth(I0, i, num_weeks, generation_interval)
         prevalence_list = [j/workplace_size for j in infected_list]
         for permutation in testing_schedules:
-            individual_output.append(high_coverage_detection_probability(permutation, prevalence_list, sensitivity, workplace_size))
+            individual_output.append(detection_probability(permutation, prevalence_list, sensitivity, workplace_size))
         output.append(sum(individual_output)/len(individual_output))
     return output
 
@@ -125,7 +89,7 @@ def varying_sensitivity(endpoints, step, num_weeks, Reff, I0, generation_interva
     for sen in sensitivity_options:
         individual_output = []
         for permutation in testing_schedules:
-            individual_output.append(high_coverage_detection_probability(permutation, prevalence_list, sen, workplace_size))
+            individual_output.append(detection_probability(permutation, prevalence_list, sen, workplace_size))
         output.append(sum(individual_output)/len(individual_output))
     return output
 
@@ -139,7 +103,7 @@ def varying_testing_frequency_high_coverage(num_weeks,I0,Reff,generation_interva
         #high coverage means if testing occurs, entire workplace is tested
         testing_schedules = [num_weeks*sched for sched in schedules]
         for permutation in testing_schedules:
-            individual_output.append(high_coverage_detection_probability(permutation, prevalence_list, sensitivity,workplace_size))
+            individual_output.append(detection_probability(permutation, prevalence_list, sensitivity,workplace_size))
         # output average, min and max
         average_prob = sum(individual_output)/len(individual_output)
         min_prob = min(individual_output)
