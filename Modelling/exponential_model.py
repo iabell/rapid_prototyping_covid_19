@@ -34,7 +34,7 @@ def weekly_schedule_permutations(testing_days_per_week):
 
 
 # data for Figure 1a
-def varying_growth_rate(endpoints, step, I0, generation_interval, testing_days_per_week, workplace_size, prop_tested_per_week, sensitivity):
+def varying_growth_rate(endpoints, step, I0, generation_interval, testing_days_per_week, sensitivity):
     growth_rate_options = [i/100 for i in list(range(int(endpoints[0]*100), int(endpoints[1]*100), int(step*100)))]
     output = []
 
@@ -72,18 +72,22 @@ def varying_sensitivity(endpoints, step, Reff, I0, generation_interval, testing_
     return output
 
 # data for supp figure impact of testing day permutations
-def varying_testing_frequency(num_weeks,I0,Reff,generation_interval,testing_days_per_week,sensitivity,workplace_size):
+def varying_testing_frequency(I0,Reff,generation_interval,testing_days_per_week,sensitivity):
     output = [] #average, min, max
-    infected_list = simple_exponential_growth(I0, Reff, generation_interval)
-    prevalence_list = [j/workplace_size for j in infected_list]
+
+    # generating prevalence
+    prevalence_list = simple_exponential_growth(I0, Reff, generation_interval)
+
     for days in testing_days_per_week:
         individual_output = []
+
+        # defining testing schedules for given frequency _days_
         testing_schedules = weekly_schedule_permutations(days)
-        #high coverage means if testing occurs, entire workplace is tested
-        # testing_schedules = [num_weeks*sched for sched in schedules]
+
         for permutation in testing_schedules:
-            individual_output.append(detection_probability(permutation, prevalence_list, sensitivity,workplace_size))
-        # output average, min and max
+            individual_output.append(detection_probability(permutation, prevalence_list, sensitivity))
+
+        # output average, min and max detection probability
         average_prob = sum(individual_output)/len(individual_output)
         min_prob = min(individual_output)
         max_prob = max(individual_output)
@@ -91,25 +95,15 @@ def varying_testing_frequency(num_weeks,I0,Reff,generation_interval,testing_days
     return output
 
 # main 
-# Figure 1a data
 
-
-
-
-growth_rate_sensitivity_plot = True
-test_days_per_week_sensitivity = False
-# reff_sensitivity = True
-testing_frequency_variance_plot = False
 
 # default parameter values
-#workplace size doesn't matter we'll just choose 50 as everyone is tested 
-workplace_size = 50
+#workplace size doesn't matter as when testing occurs, everyone is tested 
 Reff = 1.1
 test_sensitivity = 0.85
 testing_days_per_week = 1
 generation_interval = 4.7
 I0 = 1
-prop_tested_per_week = 1
 
 # Figure 1a data 
 xdata_temp = list(range(100,240,1))
@@ -118,7 +112,7 @@ figure_1a_data = []
 sensitivity_options = [0.65, 0.75, 0.85, 0.95]
 
 for option in sensitivity_options:
-    figure_1a_data.append(varying_growth_rate([1.0, 2.4], 0.01, I0, generation_interval, testing_days_per_week, workplace_size, prop_tested_per_week, option))
+    figure_1a_data.append(varying_growth_rate([1.0, 2.4], 0.01, I0, generation_interval, testing_days_per_week, option))
 
 with open("figure_1a_data.csv", 'w') as f:
     write = csv.writer(f)
@@ -167,22 +161,24 @@ plt.show()
 
 # Supplementary figure data
 
+supp_figure_xdata = range(1,8)
+supp_figure_data = varying_testing_frequency(I0,Reff,generation_interval,supp_figure_xdata,test_sensitivity)
+
+average_probs = [x[0] for x in supp_figure_data]
+min_probs = [x[1] for x in supp_figure_data]
+max_probs = [x[2] for x in supp_figure_data]
+
+with open("supp_figure.csv", 'w') as f:
+    write = csv.writer(f)
+    write.writerow(supp_figure_xdata)
+    write.writerows(supp_figure_data)
+
+plt.plot(supp_figure_xdata, average_probs)
+plt.fill_between(supp_figure_xdata, min_probs, max_probs,alpha = .25, color = 'b')
+plt.xlabel('Number of times testing occurs per week')
+plt.ylabel('Expected? probability of detection')
+plt.title('Probability of detection, varying test frequency')
+plt.savefig('med_varying_frequency')
+plt.show()
 
 
-
-
-if testing_frequency_variance_plot:
-    num_weeks = 1
-    testing_days = range(1,8)
-    data = varying_testing_frequency(num_weeks,I0,Reff,generation_interval,testing_days,test_sensitivity,workplace_size)
-    average_probs = [x[0] for x in data]
-    min_probs = [x[1] for x in data]
-    max_probs = [x[2] for x in data]
-
-    plt.plot(testing_days, average_probs)
-    plt.fill_between(testing_days, min_probs, max_probs,alpha = .25, color = 'b')
-    plt.xlabel('Number of times testing occurs per week')
-    plt.ylabel('Expected? probability of detection')
-    plt.title('Probability of detection, varying test frequency')
-    plt.savefig('med_varying_frequency')
-    plt.show()
