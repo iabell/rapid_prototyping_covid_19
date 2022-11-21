@@ -1,4 +1,3 @@
-from multiprocessing.dummy.connection import families
 from pickle import FALSE
 import pandas as pd
 import numpy as np
@@ -33,28 +32,6 @@ def weekly_schedule_permutations(testing_days_per_week):
 
     return per_week_schedule
 
-# creating testing schedule
-def define_testing_schedule(per_week_schedule, prop_tested_per_week, workplace_size):
-    testing_schedule = []
-
-    total_tests_per_week = np.round(workplace_size * prop_tested_per_week)
-    average_tests_per_testing_day = int(np.ceil(total_tests_per_week/sum(per_week_schedule[0])))
-    for i in range(len(per_week_schedule)):
-        testing_schedule.append([average_tests_per_testing_day * day for day in per_week_schedule[i]])
-
-    if sum(testing_schedule[0]) > total_tests_per_week:
-        for i in range(len(testing_schedule)):
-            remainder = sum(testing_schedule[i]) - total_tests_per_week
-            for j in range(7):
-                if testing_schedule[i][j] != 0:
-                    testing_schedule[i][j] -= 1
-                    remainder -= 1
-                if remainder == 0:
-                    break
-
-    total_testing_schedule = [schedule for schedule in testing_schedule]
-
-    return total_testing_schedule
 
 # data for Figure 1a
 def varying_growth_rate(endpoints, step, I0, generation_interval, testing_days_per_week, workplace_size, prop_tested_per_week, sensitivity):
@@ -62,8 +39,7 @@ def varying_growth_rate(endpoints, step, I0, generation_interval, testing_days_p
     output = []
 
     # defining schedules and prevalence
-    schedules = weekly_schedule_permutations(testing_days_per_week)
-    testing_schedules = define_testing_schedule(schedules, prop_tested_per_week, workplace_size)
+    testing_schedules = weekly_schedule_permutations(testing_days_per_week)
     
     for i in growth_rate_options:
         individual_output = []
@@ -83,9 +59,7 @@ def varying_sensitivity(endpoints, step, Reff, I0, generation_interval, testing_
     output = []
 
     # generating schedules and prevalence
-    schedules = weekly_schedule_permutations(testing_days_per_week)
-    num_weeks = 1
-    testing_schedules = [num_weeks*sched for sched in schedules]
+    testing_schedules = weekly_schedule_permutations(testing_days_per_week)
     prevalence_list = simple_exponential_growth(I0, Reff, generation_interval)
 
     for sen in sensitivity_options:
@@ -98,15 +72,15 @@ def varying_sensitivity(endpoints, step, Reff, I0, generation_interval, testing_
     return output
 
 # data for supp figure impact of testing day permutations
-def varying_testing_frequency_high_coverage(num_weeks,I0,Reff,generation_interval,testing_days_per_week,sensitivity,workplace_size):
+def varying_testing_frequency(num_weeks,I0,Reff,generation_interval,testing_days_per_week,sensitivity,workplace_size):
     output = [] #average, min, max
     infected_list = simple_exponential_growth(I0, Reff, generation_interval)
     prevalence_list = [j/workplace_size for j in infected_list]
     for days in testing_days_per_week:
         individual_output = []
-        schedules = weekly_schedule_permutations(days)
+        testing_schedules = weekly_schedule_permutations(days)
         #high coverage means if testing occurs, entire workplace is tested
-        testing_schedules = [num_weeks*sched for sched in schedules]
+        # testing_schedules = [num_weeks*sched for sched in schedules]
         for permutation in testing_schedules:
             individual_output.append(detection_probability(permutation, prevalence_list, sensitivity,workplace_size))
         # output average, min and max
@@ -151,18 +125,18 @@ with open("figure_1a_data.csv", 'w') as f:
     write.writerow(figure_1a_xdata)
     write.writerows(figure_1a_data)
 
-# # checking plots are fine 
-# plt.figure("2")
-# plt.plot(figure_1a_xdata, figure_1a_data[0],figure_1a_xdata, figure_1a_data[1],figure_1a_xdata, figure_1a_data[2],figure_1a_xdata, figure_1a_data[3])
-# plt.xlabel('$R_{eff}$',fontsize = 14)
-# plt.ylabel('Probability of detection within 7 days', fontsize= 14)
-# plt.title('Exponential Model', fontsize = 14)
-# plt.legend(['Test sensitivity = 0.65', 'Test sensitivity = 0.75', 'Test sensitivity = 0.85', 'Test sensitivity = 0.95'],fontsize = 12)
-# plt.ylim(0, 1.05)
-# plt.xticks(fontsize = 12)
-# plt.yticks(fontsize = 12)
-# plt.savefig('reff_sens_high_7') 
-# plt.show()
+# checking plots are fine 
+plt.figure("2")
+plt.plot(figure_1a_xdata, figure_1a_data[0],figure_1a_xdata, figure_1a_data[1],figure_1a_xdata, figure_1a_data[2],figure_1a_xdata, figure_1a_data[3])
+plt.xlabel('$R_{eff}$',fontsize = 14)
+plt.ylabel('Probability of detection within 7 days', fontsize= 14)
+plt.title('Exponential Model', fontsize = 14)
+plt.legend(['Test sensitivity = 0.65', 'Test sensitivity = 0.75', 'Test sensitivity = 0.85', 'Test sensitivity = 0.95'],fontsize = 12)
+plt.ylim(0, 1.05)
+plt.xticks(fontsize = 12)
+plt.yticks(fontsize = 12)
+plt.savefig('reff_sens_high_7') 
+plt.show()
 
 
 # Figure 1b data 
@@ -191,70 +165,16 @@ plt.xticks(fontsize = 12)
 plt.yticks(fontsize = 12)
 plt.show()
 
+# Supplementary figure data
 
 
-if test_days_per_week_sensitivity:
-    #7 and 14 days
-    xdata = list(range(40,101,1))
-    xdata = [x/100 for x in xdata]
-    timeframe_data = []
-    testing_days= [1, 3, 7]
-
-    data = []
-    for days in testing_days:
-        data.append(varying_sensitivity([0.4, 1.01], 0.01, Reff, I0, generation_interval, days, workplace_size))
-    timeframe_data.append(data)
-
-    with open("data.csv", 'w') as f:
-        write = csv.writer(f)
-        write.writerows(timeframe_data[0])
-    
-    plt.figure("1")
-    plt.plot(xdata, timeframe_data[0][0],xdata, timeframe_data[0][1],xdata, timeframe_data[0][2])
-    plt.xlabel('Test sensitivity', fontsize = 14)
-    plt.ylabel('Probability of detection within 7 days', fontsize = 14)
-    plt.title('Exponential Model',fontsize = 14)
-    plt.legend(['Weekly testing', '3/week testing', 'Daily testing'],fontsize =12)
-    plt.ylim(0,1.05)
-    plt.savefig('test_sens_high_7') 
-    plt.xticks(fontsize = 12)
-    plt.yticks(fontsize = 12)
-    plt.show()
-
-
-
-if growth_rate_sensitivity_plot:
-    #7 and 14 days
-    num_weeks = [1,2]
-    xdata = list(range(100,240,1))
-    xdata = [x/100 for x in xdata]
-    timeframe_data = []
-    sensitivity_options = [0.65, 0.75, 0.85, 0.95]
-
-    for weeks in num_weeks:
-        data = []
-        for option in sensitivity_options:
-            data.append(varying_growth_rate([1.0, 2.4], 0.01, weeks, I0, generation_interval, testing_days_per_week, workplace_size, prop_tested_per_week, option))
-        timeframe_data.append(data)
-    
-    plt.figure("2")
-    plt.plot(xdata, timeframe_data[0][0],xdata, timeframe_data[0][1],xdata, timeframe_data[0][2],xdata, timeframe_data[0][3])
-    plt.xlabel('$R_{eff}$',fontsize = 14)
-    plt.ylabel('Probability of detection within 7 days', fontsize= 14)
-    plt.title('Exponential Model', fontsize = 14)
-    plt.legend(['Test sensitivity = 0.65', 'Test sensitivity = 0.75', 'Test sensitivity = 0.85', 'Test sensitivity = 0.95'],fontsize = 12)
-    plt.ylim(0, 1.05)
-    plt.xticks(fontsize = 12)
-    plt.yticks(fontsize = 12)
-    plt.savefig('reff_sens_high_7') 
-    plt.show()
 
 
 
 if testing_frequency_variance_plot:
     num_weeks = 1
     testing_days = range(1,8)
-    data = varying_testing_frequency_high_coverage(num_weeks,I0,Reff,generation_interval,testing_days,test_sensitivity,workplace_size)
+    data = varying_testing_frequency(num_weeks,I0,Reff,generation_interval,testing_days,test_sensitivity,workplace_size)
     average_probs = [x[0] for x in data]
     min_probs = [x[1] for x in data]
     max_probs = [x[2] for x in data]
