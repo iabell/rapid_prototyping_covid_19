@@ -96,7 +96,6 @@ def varying_testing_frequency(I0,Reff,generation_interval,testing_days_per_week,
 
 # main 
 
-
 # default parameter values
 #workplace size doesn't matter as when testing occurs, everyone is tested 
 Reff = 1.1
@@ -168,7 +167,7 @@ average_probs = [x[0] for x in supp_figure_data]
 min_probs = [x[1] for x in supp_figure_data]
 max_probs = [x[2] for x in supp_figure_data]
 
-with open("supp_figure.csv", 'w') as f:
+with open("supp_figure_data.csv", 'w') as f:
     write = csv.writer(f)
     write.writerow(supp_figure_xdata)
     write.writerows(supp_figure_data)
