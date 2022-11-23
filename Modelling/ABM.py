@@ -8,6 +8,7 @@ from scipy.stats import binom
 from itertools import count 
 import csv
 from tqdm import tqdm
+from pathlib import Path
 
 # Agent definition 
 class Agent:
@@ -249,25 +250,28 @@ def test_sensitivity_test_schedule(R0, roster,test_sensitivity_varying,test_sche
     xdata = list(range(40,101,1))
     xdata = [x/100 for x in xdata]
     data_exp = []
-    with open('data.csv', newline = '') as f:
+    with open(Path(__file__).parent/"Data_and_Plotting"/"figure_1b_data.csv", newline = '') as f:
         data= csv.reader(f)
         for row in data:
             data_exp.append([float(x) for x in row])
 
+    plt.plot([],[],'k', label = 'ABM')
+    plt.plot([],[],'k--', label = 'Exponential model')
+    plt.scatter(test_sensitivity_varying,pr_list[0])
     plt.plot(test_sensitivity_varying,pr_list[0], label = 'Tested once per week')
-    # plt.plot(xdata, data_exp[0], 'C0--')
+    plt.plot(xdata, data_exp[1], 'C0--')
+    plt.scatter(test_sensitivity_varying, pr_list[1])
     plt.plot(test_sensitivity_varying, pr_list[1], label = 'Tested three times per week')
-    # plt.plot(xdata, data_exp[1], 'C1--')
+    plt.plot(xdata, data_exp[2], 'C1--')
+    plt.scatter(test_sensitivity_varying, pr_list[2])
     plt.plot(test_sensitivity_varying, pr_list[2], label = 'Tested daily')
-    # plt.plot(xdata, data_exp[2], 'C2--')
+    plt.plot(xdata, data_exp[3], 'C2--')
     plt.xlabel('Test sensitivity')
     plt.ylabel('Probability of detection within 7 days')
-    # plt.legend(['Tested once per week','', 'Tested three times per week','', 'Tested daily', ''])
     plt.legend()
     plt.ylim(0,1.05)
     # plt.savefig('test.png')
     plt.show()
-
 def exponential_model_test_sensitivity_work_schedule(R0, rosters,test_sensitivity_varying,test_schedule,simulations,plot_title):
     pr_list = [[],[],[],[]]
     asymp_fraction = 1/3
@@ -285,6 +289,7 @@ def exponential_model_test_sensitivity_work_schedule(R0, rosters,test_sensitivit
     plt.plot(test_sensitivity_varying, pr_list[2], label = 'Schedule 3')
     plt.scatter(test_sensitivity_varying, pr_list[3])
     plt.plot(test_sensitivity_varying, pr_list[3], label = 'Schedule 4')
+    plt.legend()
     plt.xlabel('Test sensitivity')
     plt.ylabel('Probability of detection within 7 days')
     plt.title(plot_title)
@@ -369,7 +374,7 @@ def main():
     three_per_week = [1, 0, 1, 0, 1, 0, 0 ]
     daily_testing = [1, 1, 1, 1, 1, 1, 1]
 
-    workplace_size = 50
+    workplace_size = 120
     no_intermittency = [0,0,0,workplace_size]
     R_eff = 1.1
     simulations = 5000
@@ -381,18 +386,17 @@ def main():
     
     # comparing exponential model and abm - test sensitivity 
     # exponential assumptions
-    # test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1)
+    test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1)
     # # abm assumptions 
-    # test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1/3)
+    test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1/3)
 
-    # # comparing exponential model and abm - reff
-    # # exponential assumptions
-    # reff_test_sensitivity(Reff_options, no_intermittency, sensitivity_options_discrete, three_per_week,simulations,1)
-    # # abm assumptions 
-    # reff_test_sensitivity(Reff_options, no_intermittency, sensitivity_options_discrete, three_per_week,simulations,1/3)
+    # comparing exponential model and abm - reff
+    # exponential assumptions
+    reff_test_sensitivity(Reff_options, no_intermittency, sensitivity_options_discrete, three_per_week,simulations,1)
+    # abm assumptions 
+    reff_test_sensitivity(Reff_options, no_intermittency, sensitivity_options_discrete, three_per_week,simulations,1/3)
 
     # intermittent testing scheduling 
-    workplace_size = 120
     roster_1 = [int(x*workplace_size) for x in [0,0,0,1]]
     roster_2 = [int(x*workplace_size) for x in[0,0,1,0]]
     roster_3 = [int(x*workplace_size) for x in[0,0.4, 0.6, 0]]
