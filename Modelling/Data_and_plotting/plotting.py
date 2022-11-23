@@ -20,16 +20,38 @@ def load_data():
         reader = csv.reader(f)
         data.update({'figure_1b_data': [[float(x) for x in el] for el in list(reader)]})
 
-        # Supplementary figure 
+    # Supplementary figure 
     with open(Path(__file__).parent/'supp_figure_data.csv') as f:
         reader = csv.reader(f)
         data.update({'supp_figure_data': [[float(x) for x in el] for el in list(reader)]})
+
+    # Figure 2a
+    with open(Path(__file__).parent/'figure_2a_data.csv') as f:
+        reader = csv.reader(f)
+        data.update({'figure_2a_data': [[float(x) for x in el] for el in list(reader)]})
+
+    # Figure 2b
+    with open(Path(__file__).parent/'figure_2b_data.csv') as f:
+        reader = csv.reader(f)
+        data.update({'figure_2b_data': [[float(x) for x in el] for el in list(reader)]})
+
+    # Figure 3a
+    with open(Path(__file__).parent/'figure_3a_data.csv') as f:
+        reader = csv.reader(f)
+        data.update({'figure_3a_data': [[float(x) for x in el] for el in list(reader)]})
+
+    # Figure 3b
+    with open(Path(__file__).parent/'figure_3b_data.csv') as f:
+        reader = csv.reader(f)
+        data.update({'figure_3b_data': [[float(x) for x in el] for el in list(reader)]})
+    
 
     return data
 
 def exponential_model_plotting():
     data = load_data()
 
+    # Figure 1a
     figure_1a_data = data['figure_1a_data']
     figure_1a_xdata = figure_1a_data[0]
     figure_1a_65 = figure_1a_data[1]
@@ -69,7 +91,6 @@ def exponential_model_plotting():
 
 
     # Supp figure
-
     supp_figure_data = data['supp_figure_data']
     supp_figure_xdata = supp_figure_data[0]
     average_probs = [x[0] for x in supp_figure_data[1:]]
@@ -85,31 +106,60 @@ def exponential_model_plotting():
     plt.show()
 
 def abm_plotting():
-    # Figure 2a
-    xdata = list(range(40,101,1))
-    xdata = [x/100 for x in xdata]
-    data_exp = []
-    with open("figure_1b_data.csv", newline = '') as f:
-        data= csv.reader(f)
-        for row in data:
-            data_exp.append([float(x) for x in row])
+    data = load_data()
 
-    plt.plot([],[],'k', label = 'ABM')
+    # Figure 2a
+    # ABM data
+    figure_2a_data = data['figure_2a_data']
+    figure_2a_xdata = figure_2a_data[0]
+    figure_2a_1 = figure_2a_data[1]
+    figure_2a_3 = figure_2a_data[2]
+    figure_2a_7 = figure_2a_data[3]
+
+    # Exponential model data
+    figure_1b_data = data['figure_1b_data']
+    figure_1b_1 = figure_1b_data[1]
+    figure_1b_3 = figure_1b_data[2]
+    figure_1b_7 = figure_1b_data[3]
+
+    plt.scatter([],[],'k', label = 'ABM')
     plt.plot([],[],'k--', label = 'Exponential model')
-    plt.scatter(test_sensitivity_varying,pr_list[0])
-    plt.plot(test_sensitivity_varying,pr_list[0], label = 'Tested once per week')
-    plt.plot(xdata, data_exp[0], 'C0--')
-    plt.scatter(test_sensitivity_varying, pr_list[1])
-    plt.plot(test_sensitivity_varying, pr_list[1], label = 'Tested three times per week')
-    plt.plot(xdata, data_exp[1], 'C1--')
-    plt.scatter(test_sensitivity_varying, pr_list[2])
-    plt.plot(test_sensitivity_varying, pr_list[2], label = 'Tested daily')
-    plt.plot(xdata, data_exp[2], 'C2--')
+    plt.scatter(figure_2a_xdata,figure_2a_1)
+    plt.plot(figure_2a_xdata ,figure_2a_1, label = 'Tested once per week')
+    plt.plot(figure_2a_xdata , figure_1b_1, 'C0--')
+    plt.scatter(figure_2a_xdata , figure_2a_3)
+    plt.plot(figure_2a_xdata , figure_2a_3, label = 'Tested three times per week')
+    plt.plot(figure_2a_xdata , figure_1b_3, 'C1--')
+    plt.scatter(figure_2a_xdata , figure_2a_7)
+    plt.plot(figure_2a_xdata , figure_2a_7, label = 'Tested daily')
+    plt.plot(figure_2a_xdata , figure_1b_7, 'C2--')
     plt.xlabel('Test sensitivity')
     plt.ylabel('Probability of detection within 7 days')
     plt.legend()
     plt.ylim(0,1.05)
-    # plt.savefig('test.png')
+    plt.savefig('figure_2a.eps')
+    plt.show()
+
+
+    # Figure 2b
+    figure_2b_data = data['figure_2b_data']
+    figure_2b_xdata = figure_2b_data[0]
+    figure_2b_1 = figure_2b_data[1]
+    figure_2b_3 = figure_2b_data[2]
+    figure_2b_7 = figure_2b_data[3]
+
+    plt.scatter(figure_2b_xdata,figure_2b_1, label = 'Tested once per week')
+    plt.plot(figure_2b_xdata ,figure_2b_1)
+    plt.scatter(figure_2b_xdata , figure_2b_3, label = 'Tested three times per week')
+    plt.plot(figure_2b_xdata , figure_2b_3)
+    plt.scatter(figure_2b_xdata , figure_2b_7, label = 'Tested daily')
+    plt.plot(figure_2b_xdata , figure_2b_7)
+    plt.xlabel('Test sensitivity')
+    plt.ylabel('Probability of detection within 7 days')
+    plt.legend()
+    plt.ylim(0,1.05)
+    plt.savefig('figure_2b.eps')
     plt.show()
 
 exponential_model_plotting()
+abm_plotting()
