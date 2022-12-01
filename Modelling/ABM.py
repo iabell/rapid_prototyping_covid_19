@@ -57,6 +57,7 @@ class Agent:
                     self.status = 'latent'
                 else: 
                     self.status = 'incubating'
+                    self.infectiousness = 'infectious'
 
     def testing(self, params, test_sensitivity, detection_testing, detection_symptoms, people_tested, n_test_t, t):
         # detection via testing 
@@ -143,10 +144,10 @@ def infection_and_testing(d, params, FOI, work_schedule, day_of_week, test_sensi
         for person in work_schedule[day_of_week]:
             agent_n = "agent_{0}".format(person)
 
+            detection_testing, detection_symptoms, people_tested = d[agent_n].testing(params, test_sensitivity, detection_testing, detection_symptoms, people_tested, n_test_t, t)
+
             # check for infection events 
             d[agent_n].infection_event(params, FOI)
-
-            detection_testing, detection_symptoms, people_tested = d[agent_n].testing(params, test_sensitivity, detection_testing, detection_symptoms, people_tested, n_test_t, t)
 
             if detection_testing > 0 or detection_symptoms > 0:
                 if detection_testing > 0 and detection_symptoms > 0:
@@ -178,8 +179,8 @@ def ABM_model_def(R0, roster,test_sensitivity,test_schedule, asymp_fraction):
         ('latent_period', 1),
         ('test_report_delay', 0),
         ('N', int(sum(roster))),
-        # beta calibrated for R0 = beta * 12.7
-        ('beta', R0/(12.7)),
+        # beta calibrated for workplaces size 120 and R0 = 1.1
+        ('beta', 3.4482758620689657e-05),
         ('symptom_presentation_delay', 0) 
     ])
     
@@ -189,7 +190,7 @@ def ABM_model_def(R0, roster,test_sensitivity,test_schedule, asymp_fraction):
         params['test_report_delay'] = 0
 
     # timing for simulation
-    dt, max_time = 0.25, 200 #days?
+    max_time = 200 #days?
 
     #maximum number of tests per day (test schedule is % of workforce tested that day) 
     tests_per_day = [np.floor(tests*params['N']) for tests in test_schedule]
@@ -233,6 +234,76 @@ def ABM_simulation(R0, roster, test_sensitivity, test_schedule,simulations,asymp
     prob_of_detection_7_days = sum([1 for x in results if x <= 7])/len(results)
     return time_to_detection, prob_of_detection_7_days
 
+def calculate_beta(R0, N):
+    beta_range = np.linspace(0, 0.0005, 30)
+    beta_vals = []
+    R0_vals = []
+    simulations = 100
+
+    for beta in beta_range:
+        total_simulation_infections = 0
+        for sim in range(simulations):
+            params = dict([
+            ('symp_min', 5),
+            ('symp_max', 10),
+            ('inc_mu', 1.62),
+            ('inc_sig', 0.418),
+            ('latent_period', 1),
+            ('asymp_fraction', 0), # not important for beta calibration 
+            ('test_report_delay', 0),
+            ('N', N),
+            ('beta', beta),
+        ])
+            
+            # timing for simulation
+            max_time = 200 #days?
+            
+            d = create_agents(params)
+
+            start = 1
+
+            # seed infection
+            seed_index = rand.randint(0, N-1)
+            seed_agent = "agent_{0}".format(seed_index)
+            d[seed_agent].status = 'incubating'
+            d[seed_agent].infectiousness = 'infectious'
+        
+            # force of infection for 1 infected person
+            FOI = (beta/(N - 1))*1
+
+            secondary_infection_count = 0
+
+            for t in range(start,max_time+start):
+
+                d[seed_agent].check_transition(params) #checking to see if seed is non-infectious
+                if d[seed_agent].infectiousness != 'infectious':
+                    break 
+
+
+                #seeing if someone gets infected
+                for person in range(N):
+                    agent_n = "agent_{0}".format(person)
+
+                    # check for infection events 
+                    d[agent_n].infection_event(params, FOI)
+                    if d[agent_n].status != 'susceptible' and person != seed_index:
+                        secondary_infection_count += 1
+                        d[agent_n].status = 'removed'
+
+            total_simulation_infections = total_simulation_infections + secondary_infection_count
+        
+        R0_sim = total_simulation_infections/simulations
+        beta_vals.append(beta)
+        R0_vals.append(R0_sim)
+    
+    closest_to = [abs(el - R0) for el in R0_vals]
+    min_index = closest_to.index(min(closest_to))
+    
+    R0_check = R0_vals[min_index]
+    beta_calibrated = beta_vals[min_index]
+    
+    return beta_calibrated
+
 
 def test_sensitivity_test_schedule(R0, roster,test_sensitivity_varying,test_schedule,simulations,asymp_fraction):
     pr_list= [[],[],[]]
@@ -272,6 +343,7 @@ def test_sensitivity_test_schedule(R0, roster,test_sensitivity_varying,test_sche
     plt.ylim(0,1.05)
     # plt.savefig('test.png')
     plt.show()
+
 def exponential_model_test_sensitivity_work_schedule(R0, rosters,test_sensitivity_varying,test_schedule,simulations,plot_title):
     pr_list = [[],[],[],[]]
     asymp_fraction = 1/3
@@ -383,18 +455,20 @@ def main():
 
     Reff_options_discrete = [1.1, 1.5, 2, 2.5]
     Reff_options = np.linspace(1.1, 2.4, 14)
+
+    # calculate_beta(R_eff, workplace_size)
     
     # comparing exponential model and abm - test sensitivity 
     # exponential assumptions
-    test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1)
+    # test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1)
     # # abm assumptions 
-    test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1/3)
+    # test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1/3)
 
     # comparing exponential model and abm - reff
     # exponential assumptions
-    reff_test_sensitivity(Reff_options, no_intermittency, sensitivity_options_discrete, three_per_week,simulations,1)
+    # reff_test_sensitivity(Reff_options, no_intermittency, sensitivity_options_discrete, three_per_week,simulations,1)
     # abm assumptions 
-    reff_test_sensitivity(Reff_options, no_intermittency, sensitivity_options_discrete, three_per_week,simulations,1/3)
+    # reff_test_sensitivity(Reff_options, no_intermittency, sensitivity_options_discrete, three_per_week,simulations,1/3)
 
     # intermittent testing scheduling 
     roster_1 = [int(x*workplace_size) for x in [0,0,0,1]]
@@ -405,7 +479,7 @@ def main():
 
     # testing 3 times/week
     plot_title = 'Testing 3 times per week'
-    exponential_model_test_sensitivity_work_schedule(Reff, [roster_1,roster_2,roster_3,roster_4],sensitivity_options,[three_per_week],simulations,plot_title)
+    # exponential_model_test_sensitivity_work_schedule(Reff, [roster_1,roster_2,roster_3,roster_4],sensitivity_options,[three_per_week],simulations,plot_title)
 
     # testing daily 
     plot_title = 'Testing daily'
