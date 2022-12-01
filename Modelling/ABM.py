@@ -9,6 +9,7 @@ from itertools import count
 import csv
 from tqdm import tqdm
 from pathlib import Path
+from scipy import stats 
 
 # Agent definition 
 class Agent:
@@ -33,6 +34,11 @@ class Agent:
             total_daily_prevalence += 1
         
         return total_daily_prevalence
+
+    def update_clock_beta_calibration(self):
+        if self.status == 'latent' or self.infectiousness == 'infectious':
+            self.infection_clock += 1
+
 
 
     def check_transition(self, params):
@@ -235,12 +241,12 @@ def ABM_simulation(R0, roster, test_sensitivity, test_schedule,simulations,asymp
     return time_to_detection, prob_of_detection_7_days
 
 def calculate_beta(R0, N):
-    beta_range = np.linspace(0, 0.0005, 30)
+    beta_range = np.linspace(0.05, 0.2, 30)
     beta_vals = []
     R0_vals = []
-    simulations = 100
+    simulations = 200
 
-    for beta in beta_range:
+    for beta in tqdm(beta_range):
         total_simulation_infections = 0
         for sim in range(simulations):
             params = dict([
@@ -256,7 +262,7 @@ def calculate_beta(R0, N):
         ])
             
             # timing for simulation
-            max_time = 200 #days?
+            max_time = 50 #days?
             
             d = create_agents(params)
 
@@ -286,23 +292,38 @@ def calculate_beta(R0, N):
 
                     # check for infection events 
                     d[agent_n].infection_event(params, FOI)
-                    if d[agent_n].status != 'susceptible' and person != seed_index:
+                    if d[agent_n].status != 'susceptible' and d[agent_n].status != 'removed' and person != seed_index:
                         secondary_infection_count += 1
                         d[agent_n].status = 'removed'
+
+                d[seed_agent].update_clock_beta_calibration()
 
             total_simulation_infections = total_simulation_infections + secondary_infection_count
         
         R0_sim = total_simulation_infections/simulations
-        beta_vals.append(beta)
         R0_vals.append(R0_sim)
+
+    X = beta_range
+    Y = R0_vals
+
+    results = stats.linregress(X, Y)
+    slope = results.slope
+    intercept = results.intercept
+    rval = results.rvalue
+
+    plt.figure('beta_calibration')
+    plt.plot(beta_range, R0_vals, label = 'Simulated')
+    plt.plot(beta_range, intercept + slope*np.array(beta_range), '--', label='Fitted line')
+    plt.xlabel('Beta')
+    plt.ylabel('$R_0$')
+    plt.legend()
+    plt.title('slope = ' + "{:.2f}".format(slope) + ', intercept = ' + "{:.2f}".format(intercept) + ', r = ' + "{:.2f}".format(rval))
     
-    closest_to = [abs(el - R0) for el in R0_vals]
-    min_index = closest_to.index(min(closest_to))
+    plt.savefig(Path(__file__).parent/'Data_and_plotting'/'beta_calibration.eps')
+    plt.show()
+
     
-    R0_check = R0_vals[min_index]
-    beta_calibrated = beta_vals[min_index]
-    
-    return beta_calibrated
+    return slope, intercept
 
 
 def test_sensitivity_test_schedule(R0, roster,test_sensitivity_varying,test_schedule,simulations,asymp_fraction):
@@ -326,7 +347,7 @@ def test_sensitivity_test_schedule(R0, roster,test_sensitivity_varying,test_sche
         for row in data:
             data_exp.append([float(x) for x in row])
 
-    plt.plot([],[],'k', label = 'ABM')
+    plt.scatter([],[],'k', label = 'ABM')
     plt.plot([],[],'k--', label = 'Exponential model')
     plt.scatter(test_sensitivity_varying,pr_list[0])
     plt.plot(test_sensitivity_varying,pr_list[0], label = 'Tested once per week')
@@ -456,13 +477,13 @@ def main():
     Reff_options_discrete = [1.1, 1.5, 2, 2.5]
     Reff_options = np.linspace(1.1, 2.4, 14)
 
-    # calculate_beta(R_eff, workplace_size)
+    slope, intercept = calculate_beta(R_eff, workplace_size)
     
     # comparing exponential model and abm - test sensitivity 
     # exponential assumptions
-    # test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1)
+    test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1)
     # # abm assumptions 
-    # test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1/3)
+    test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1/3)
 
     # comparing exponential model and abm - reff
     # exponential assumptions
