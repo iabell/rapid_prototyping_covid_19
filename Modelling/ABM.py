@@ -185,8 +185,9 @@ def ABM_model_def(R0, roster,test_sensitivity,test_schedule, asymp_fraction):
         ('latent_period', 1),
         ('test_report_delay', 0),
         ('N', int(sum(roster))),
-        # beta calibrated for workplaces size 120 and R0 = 1.1
-        ('beta', 3.4482758620689657e-05),
+        # beta calibrated for workplaces size 120 using beta calibration
+        # R0 = 14.15*beta + 0.03
+        ('beta', R0/14.15),
         ('symptom_presentation_delay', 0) 
     ])
     
@@ -241,10 +242,10 @@ def ABM_simulation(R0, roster, test_sensitivity, test_schedule,simulations,asymp
     return time_to_detection, prob_of_detection_7_days
 
 def calculate_beta(R0, N):
-    beta_range = np.linspace(0.05, 0.2, 30)
+    beta_range = np.linspace(0.05, 0.2, 100)
     beta_vals = []
     R0_vals = []
-    simulations = 200
+    simulations = 500
 
     for beta in tqdm(beta_range):
         total_simulation_infections = 0
@@ -314,7 +315,7 @@ def calculate_beta(R0, N):
     plt.figure('beta_calibration')
     plt.plot(beta_range, R0_vals, label = 'Simulated')
     plt.plot(beta_range, intercept + slope*np.array(beta_range), '--', label='Fitted line')
-    plt.xlabel('Beta')
+    plt.xlabel('beta')
     plt.ylabel('$R_0$')
     plt.legend()
     plt.title('slope = ' + "{:.2f}".format(slope) + ', intercept = ' + "{:.2f}".format(intercept) + ', r = ' + "{:.2f}".format(rval))
@@ -347,22 +348,23 @@ def test_sensitivity_test_schedule(R0, roster,test_sensitivity_varying,test_sche
         for row in data:
             data_exp.append([float(x) for x in row])
 
-    plt.scatter([],[],'k', label = 'ABM')
-    plt.plot([],[],'k--', label = 'Exponential model')
+    # plt.scatter([-1],[0],c = 'k', label = 'ABM')
+    # plt.plot([],[],'k--', label = 'Exponential model')
     plt.scatter(test_sensitivity_varying,pr_list[0])
     plt.plot(test_sensitivity_varying,pr_list[0], label = 'Tested once per week')
-    plt.plot(xdata, data_exp[1], 'C0--')
+    # plt.plot(xdata, data_exp[1], 'C0--')
     plt.scatter(test_sensitivity_varying, pr_list[1])
     plt.plot(test_sensitivity_varying, pr_list[1], label = 'Tested three times per week')
-    plt.plot(xdata, data_exp[2], 'C1--')
+    # plt.plot(xdata, data_exp[2], 'C1--')
     plt.scatter(test_sensitivity_varying, pr_list[2])
     plt.plot(test_sensitivity_varying, pr_list[2], label = 'Tested daily')
-    plt.plot(xdata, data_exp[3], 'C2--')
+    # plt.plot(xdata, data_exp[3], 'C2--')
     plt.xlabel('Test sensitivity')
     plt.ylabel('Probability of detection within 7 days')
     plt.legend()
     plt.ylim(0,1.05)
-    # plt.savefig('test.png')
+    plt.xlim(0.38,1.02)
+    plt.savefig('test_2.eps')
     plt.show()
 
 def exponential_model_test_sensitivity_work_schedule(R0, rosters,test_sensitivity_varying,test_schedule,simulations,plot_title):
@@ -387,7 +389,7 @@ def exponential_model_test_sensitivity_work_schedule(R0, rosters,test_sensitivit
     plt.ylabel('Probability of detection within 7 days')
     plt.title(plot_title)
     plt.ylim(0.5,1.05)
-    # plt.savefig('test.png')
+    plt.savefig('figure_3b.eps')
     plt.show()
 
 
@@ -477,13 +479,13 @@ def main():
     Reff_options_discrete = [1.1, 1.5, 2, 2.5]
     Reff_options = np.linspace(1.1, 2.4, 14)
 
-    slope, intercept = calculate_beta(R_eff, workplace_size)
+    # slope, intercept = calculate_beta(R_eff, workplace_size)
     
     # comparing exponential model and abm - test sensitivity 
     # exponential assumptions
-    test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1)
+    # test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1)
     # # abm assumptions 
-    test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1/3)
+    # test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1/3)
 
     # comparing exponential model and abm - reff
     # exponential assumptions
