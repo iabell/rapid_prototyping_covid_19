@@ -28,16 +28,16 @@ class Agent:
         self.symptomatic_prob = rand.random()
 
 
-    def update_clock(self, total_daily_prevalence):
+    def update_clock(self, total_daily_prevalence, dt):
         if self.status == 'latent' or self.infectiousness == 'infectious':
-            self.infection_clock += 1
+            self.infection_clock += dt
             total_daily_prevalence += 1
         
         return total_daily_prevalence
 
-    def update_clock_beta_calibration(self):
+    def update_clock_beta_calibration(self, dt):
         if self.status == 'latent' or self.infectiousness == 'infectious':
-            self.infection_clock += 1
+            self.infection_clock += dt
 
 
 
@@ -68,7 +68,7 @@ class Agent:
 
     def testing(self, params, test_sensitivity, detection_testing, detection_symptoms, people_tested, n_test_t, t):
         # detection via testing 
-        if n_test_t - people_tested > 0 and detection_testing == 0:
+        if n_test_t - people_tested > 0 and detection_testing == 0 and n_test_t > 0:
             people_tested += 1
             if self.infectiousness == 'infectious':
                 test_rand = np.random.rand()
@@ -122,7 +122,7 @@ def seed_infection(d, params, work_schedule):
     
     return start
 
-def status_transitions(d, params, work_schedule, day_of_week):
+def status_transitions(d, params, work_schedule, day_of_week, dt):
     infectious_at_work_count= 0
 
     for n in range(params['N']):
@@ -137,7 +137,7 @@ def status_transitions(d, params, work_schedule, day_of_week):
     people_at_work = len(work_schedule[day_of_week])
 
     # Force of infection - frequency dependent transmission 
-    FOI = (params['beta']/(people_at_work - 1))*infectious_at_work_count
+    FOI = (params['beta']/(people_at_work - 1))*infectious_at_work_count*dt
 
     return FOI
 
@@ -165,12 +165,12 @@ def infection_and_testing(d, params, FOI, work_schedule, day_of_week, test_sensi
         # outbreak not detected
         return -1
 
-def update_clock_calculate_prevalence(d, params):
+def update_clock_calculate_prevalence(d, params, dt):
     total_daily_prevalence = 0
     for n in range(params['N']):
         agent_n = "agent_{0}".format(n)
         # update clocks
-        total_daily_prevalence = d[agent_n].update_clock(total_daily_prevalence)
+        total_daily_prevalence = d[agent_n].update_clock(total_daily_prevalence, dt)
     return total_daily_prevalence
 
 #single simulation 
@@ -187,8 +187,8 @@ def ABM_model_def(R0, roster,test_sensitivity,test_schedule, asymp_fraction):
         ('test_report_delay', 0),
         ('N', int(sum(roster))),
         # beta calibrated for workplaces size 120 using beta calibration
-        # R0 = 14.15*beta + 0.03
-        ('beta', R0/14.15),
+        # R0 = 14.32*beta + 0.004
+        ('beta', R0/14.32),
         ('symptom_presentation_delay', 0) 
     ])
     
@@ -200,6 +200,8 @@ def ABM_model_def(R0, roster,test_sensitivity,test_schedule, asymp_fraction):
     # timing for simulation
     max_time = 200 #days?
 
+    dt = 0.25
+
     #maximum number of tests per day (test schedule is % of workforce tested that day) 
     tests_per_day = [np.floor(tests*params['N']) for tests in test_schedule]
     
@@ -209,20 +211,24 @@ def ABM_model_def(R0, roster,test_sensitivity,test_schedule, asymp_fraction):
 
     start = seed_infection(d, params, work_schedule)
 
-    for t in range(start,max_time+start):
-        day_of_week = t%7
+    for t in np.arange(start, start + max_time, dt):
+        day_of_week = int(np.floor(t%7))
 
-        #number of tests for this day
-        n_test_t = min(tests_per_day[day_of_week],sum(work_schedule[day_of_week]))
+        # number of tests for this day 
+        # only testing once per day 
+        if t - np.floor(t) == 0:
+            n_test_t = min(tests_per_day[day_of_week],sum(work_schedule[day_of_week]))
+        else:
+            n_test_t = 0
 
-        FOI = status_transitions(d, params, work_schedule, day_of_week)
+        FOI = status_transitions(d, params, work_schedule, day_of_week, dt)
 
         time_to_detection = infection_and_testing(d, params, FOI, work_schedule, day_of_week, test_sensitivity, n_test_t, t)
 
         if time_to_detection > 0:
             return time_to_detection
 
-        total_daily_prevalence = update_clock_calculate_prevalence(d, params)
+        total_daily_prevalence = update_clock_calculate_prevalence(d, params, dt)
             
         #if we run out of infections before detection (t>10 to ensure we don't break in first step as first latent infection won't register as infectious)
         if total_daily_prevalence == 0 and t> 10:
@@ -247,6 +253,8 @@ def calculate_beta(R0, N):
     beta_vals = []
     R0_vals = []
     simulations = 500
+
+    dt = 0.25
 
     for beta in tqdm(beta_range):
         total_simulation_infections = 0
@@ -277,11 +285,11 @@ def calculate_beta(R0, N):
             d[seed_agent].infectiousness = 'infectious'
         
             # force of infection for 1 infected person
-            FOI = (beta/(N - 1))*1
+            FOI = (beta/(N - 1))*1*dt
 
             secondary_infection_count = 0
 
-            for t in range(start,max_time+start):
+            for t in range(start,max_time+start, dt):
 
                 d[seed_agent].check_transition(params) #checking to see if seed is non-infectious
                 if d[seed_agent].infectiousness != 'infectious':
@@ -298,7 +306,7 @@ def calculate_beta(R0, N):
                         secondary_infection_count += 1
                         d[agent_n].status = 'removed'
 
-                d[seed_agent].update_clock_beta_calibration()
+                d[seed_agent].update_clock_beta_calibration(dt)
 
             total_simulation_infections = total_simulation_infections + secondary_infection_count
         
@@ -334,7 +342,7 @@ def test_sensitivity_test_schedule(R0, roster,test_sensitivity_varying,test_sche
 
     thing = range(len(test_schedule))
 
-    for i in range(len(test_schedule)):
+    for i in tqdm(range(len(test_schedule))):
         for sensitivity in test_sensitivity_varying:
             results = ABM_simulation(R0, roster,sensitivity,test_schedule[i],simulations,asymp_fraction)
             pr_list[i].append(results[1])
@@ -349,17 +357,17 @@ def test_sensitivity_test_schedule(R0, roster,test_sensitivity_varying,test_sche
         for row in data:
             data_exp.append([float(x) for x in row])
 
-    # plt.scatter([-1],[0],c = 'k', label = 'ABM')
-    # plt.plot([],[],'k--', label = 'Exponential model')
+    plt.scatter([-1],[0],c = 'k', label = 'ABM')
+    plt.plot([],[],'k--', label = 'Exponential model')
     plt.scatter(test_sensitivity_varying,pr_list[0])
     plt.plot(test_sensitivity_varying,pr_list[0], label = 'Tested once per week')
-    # plt.plot(xdata, data_exp[1], 'C0--')
+    plt.plot(xdata, data_exp[1], 'C0--')
     plt.scatter(test_sensitivity_varying, pr_list[1])
     plt.plot(test_sensitivity_varying, pr_list[1], label = 'Tested three times per week')
-    # plt.plot(xdata, data_exp[2], 'C1--')
+    plt.plot(xdata, data_exp[2], 'C1--')
     plt.scatter(test_sensitivity_varying, pr_list[2])
     plt.plot(test_sensitivity_varying, pr_list[2], label = 'Tested daily')
-    # plt.plot(xdata, data_exp[3], 'C2--')
+    plt.plot(xdata, data_exp[3], 'C2--')
     plt.xlabel('Test sensitivity')
     plt.ylabel('Probability of detection within 7 days')
     plt.legend()
@@ -484,7 +492,7 @@ def main():
     
     # comparing exponential model and abm - test sensitivity 
     # exponential assumptions
-    # test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1)
+    test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1)
     # # abm assumptions 
     # test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1/3)
 
