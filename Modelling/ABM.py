@@ -57,8 +57,9 @@ class Agent:
 
     def infection_event(self, params, FOI):
         if self.status == "susceptible":
-            infection_prob = np.random.rand()
-            if infection_prob < FOI:
+            infection_prop = np.random.rand()
+            infection_prob = 1 - np.exp(-FOI)
+            if infection_prop < infection_prob:
                 if params['latent_period'] != 0:
                     self.status = 'latent'
                 else: 
