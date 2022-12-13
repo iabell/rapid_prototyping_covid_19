@@ -364,24 +364,7 @@ def compare_exp_ABM(R0, roster,test_sensitivity_varying,test_schedule,simulation
         for row in data:
             data_exp.append([float(x) for x in row])
 
-    # plt.scatter([-1],[0],c = 'k', label = 'ABM')
-    # plt.plot([],[],'k--', label = 'Exponential model')
-    plt.scatter(test_sensitivity_varying,pr_list[0])
-    plt.plot(test_sensitivity_varying,pr_list[0], label = 'Tested once per week')
-    # plt.plot(xdata, data_exp[1], 'C0--')
-    plt.scatter(test_sensitivity_varying, pr_list[1])
-    plt.plot(test_sensitivity_varying, pr_list[1], label = 'Tested three times per week')
-    # plt.plot(xdata, data_exp[2], 'C1--')
-    plt.scatter(test_sensitivity_varying, pr_list[2])
-    plt.plot(test_sensitivity_varying, pr_list[2], label = 'Tested daily')
-    # plt.plot(xdata, data_exp[3], 'C2--')
-    plt.xlabel('Test sensitivity')
-    plt.ylabel('Probability of detection within 7 days')
-    plt.legend()
-    plt.ylim(0,1.05)
-    plt.xlim(0.38,1.02)
-    plt.savefig('figure_2b.eps')
-    plt.show()
+
 
 def intermittent_schedule(R0, rosters,test_sensitivity_varying,test_schedule,simulations,file_name):
     pr_list = [[],[],[],[]]
@@ -414,9 +397,9 @@ def main():
     
     # comparing exponential model and abm (Figure 2)
     # exponential assumptions
-    compare_exp_ABM(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1, 'figure_2a.csv')
+    compare_exp_ABM(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1, Path(__file__).parent/"Data_and_Plotting"/'figure_2a_data.csv')
     # ABM assumptions
-    compare_exp_ABM(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1/3, 'figure_2b.csv')
+    compare_exp_ABM(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1/3, Path(__file__).parent/"Data_and_Plotting"/'figure_2b_data.csv')
 
 
     # intermittent testing scheduling 
@@ -427,11 +410,11 @@ def main():
     Reff = 1.1
 
     # testing 3 times/week
-    file_name = 'figure_3a.csv'
+    file_name = Path(__file__).parent/"Data_and_Plotting"/'figure_3a_data.csv'
     intermittent_schedule(Reff, [roster_1,roster_2,roster_3,roster_4],sensitivity_options,[three_per_week],simulations,file_name)
 
     # testing daily 
-    file_name = 'figure_3b.csv'
+    file_name = Path(__file__).parent/"Data_and_Plotting"/'figure_3b_data.csv'
     intermittent_schedule(Reff, [roster_1,roster_2,roster_3,roster_4],sensitivity_options,[daily_testing],simulations,file_name)
 
 main()
