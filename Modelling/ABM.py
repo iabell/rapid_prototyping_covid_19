@@ -383,7 +383,7 @@ def compare_exp_ABM(R0, roster,test_sensitivity_varying,test_schedule,simulation
     plt.savefig('figure_2b.eps')
     plt.show()
 
-def exponential_model_test_sensitivity_work_schedule(R0, rosters,test_sensitivity_varying,test_schedule,simulations,plot_title):
+def intermittent_schedule(R0, rosters,test_sensitivity_varying,test_schedule,simulations,file_name):
     pr_list = [[],[],[],[]]
     asymp_fraction = 1/3
 
@@ -392,60 +392,10 @@ def exponential_model_test_sensitivity_work_schedule(R0, rosters,test_sensitivit
             results = ABM_simulation(R0, rosters[i],sensitivity,test_schedule[0],simulations,asymp_fraction)
             pr_list[i].append(results[1])
 
-    plt.scatter(test_sensitivity_varying,pr_list[0])
-    plt.plot(test_sensitivity_varying,pr_list[0], label = 'Schedule 1')
-    plt.scatter(test_sensitivity_varying, pr_list[1])
-    plt.plot(test_sensitivity_varying, pr_list[1], label = 'Schedule 2')
-    plt.scatter(test_sensitivity_varying, pr_list[2])
-    plt.plot(test_sensitivity_varying, pr_list[2], label = 'Schedule 3')
-    plt.scatter(test_sensitivity_varying, pr_list[3])
-    plt.plot(test_sensitivity_varying, pr_list[3], label = 'Schedule 4')
-    plt.legend()
-    plt.xlabel('Test sensitivity')
-    plt.ylabel('Probability of detection within 7 days')
-    plt.title(plot_title)
-    plt.ylim(0.5,1.05)
-    plt.savefig('figure_3b.eps')
-    plt.show()
-
-
-
-def figure_four_phase_b():
-    test_schedule = [1,1,1,1,1,1,1]
-    workplace_size = 120
-    asymp_fraction = 0.33
-    #7 days a week
-    roster_1 = [0,0,0,workplace_size]
-    roster_2 = [0,0,workplace_size,0]
-    roster_3 = [0,int(np.ceil(0.4*workplace_size)),int(np.floor(0.6*workplace_size)),0]
-    roster_4 = [int(np.floor(0.1*workplace_size)),int(np.ceil(0.3*workplace_size)), int(np.floor(0.6*workplace_size)),0]
-    roster = [roster_1, roster_2, roster_3, roster_4]
-
-    test_sensitivity = np.linspace(0.3, 0.95, 14)
-    R0_options = [1.1, 1.9]
-
-    roster_results = []
-    for roster_list in roster:
-        R0_results = []
-        for R0 in R0_options:
-            R0_results.append(sensitivity_results(R0, roster_list, test_sensitivity,test_schedule,asymp_fraction))
-        roster_results.append(R0_results)
-
-    plt.figure('1')
-    plt.plot(test_sensitivity,roster_results[0][0],test_sensitivity,roster_results[1][0],test_sensitivity,roster_results[2][0],test_sensitivity,roster_results[3][0])
-
-    plt.figure('2')
-    plt.plot(test_sensitivity,roster_results[0][1],test_sensitivity,roster_results[1][1],test_sensitivity,roster_results[2][1],test_sensitivity,roster_results[3][1])
-    plt.show()
-
-
-def sensitivity_results(R0,roster,test_sens,test_schedule,asymp_fraction):
-    sens_results = []
-    for sensitivity in test_sens:
-        results = ABM_simulation(R0, roster, sensitivity,test_schedule,1000,asymp_fraction)
-        sens_results.append(results)
-    return sens_results
-
+    with open(file_name, 'w') as f:
+        write = csv.writer(f)
+        write.writerow(test_sensitivity_varying)
+        write.writerows(pr_list)
 
 
 def main():
@@ -458,10 +408,6 @@ def main():
     R_eff = 1.1
     simulations = 5000
     sensitivity_options = np.linspace(0.4,1,12)
-    sensitivity_options_discrete = [0.65, 0.75, 0.85, 0.95]
-
-    Reff_options_discrete = [1.1, 1.5, 2, 2.5]
-    Reff_options = np.linspace(1.1, 2.4, 14)
 
     # calibrating beta 
     # slope, intercept = calculate_beta(R_eff, workplace_size)
@@ -481,11 +427,11 @@ def main():
     Reff = 1.1
 
     # testing 3 times/week
-    plot_title = 'Testing 3 times per week'
-    # exponential_model_test_sensitivity_work_schedule(Reff, [roster_1,roster_2,roster_3,roster_4],sensitivity_options,[three_per_week],simulations,plot_title)
+    file_name = 'figure_3a.csv'
+    intermittent_schedule(Reff, [roster_1,roster_2,roster_3,roster_4],sensitivity_options,[three_per_week],simulations,file_name)
 
     # testing daily 
-    plot_title = 'Testing daily'
-    exponential_model_test_sensitivity_work_schedule(Reff, [roster_1,roster_2,roster_3,roster_4],sensitivity_options,[daily_testing],simulations,plot_title)
+    file_name = 'figure_3b.csv'
+    intermittent_schedule(Reff, [roster_1,roster_2,roster_3,roster_4],sensitivity_options,[daily_testing],simulations,file_name)
 
 main()
