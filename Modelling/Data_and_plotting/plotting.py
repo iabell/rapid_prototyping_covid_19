@@ -161,5 +161,56 @@ def abm_plotting():
     plt.savefig('figure_2b.eps')
     plt.show()
 
+
+    # Figure 3a
+    figure_3a_data = data['figure_3a_data']
+    figure_3a_xdata = figure_3a_data[0]
+    figure_3a_1 = figure_3a_data[1]
+    figure_3a_2 = figure_3a_data[2]
+    figure_3a_3 = figure_3a_data[3]
+    figure_3a_4 = figure_3a_data[4]
+
+    plt.scatter(figure_3a_xdata,figure_3a_1)
+    plt.plot(figure_3a_xdata,figure_3a_1, label = 'Schedule 1')
+    plt.scatter(figure_3a_xdata, figure_3a_2)
+    plt.plot(figure_3a_xdata, figure_3a_2, label = 'Schedule 2')
+    plt.scatter(figure_3a_xdata, figure_3a_3)
+    plt.plot(figure_3a_xdata, figure_3a_3, label = 'Schedule 3')
+    plt.scatter(figure_3a_xdata, figure_3a_4)
+    plt.plot(figure_3a_xdata, figure_3a_4, label = 'Schedule 4')
+    plt.legend()
+    plt.xlabel('Test sensitivity')
+    plt.ylabel('Probability of detection within 7 days')
+    plt.title('Testing 3 times per week')
+    plt.ylim(0.5,1.05)
+    plt.savefig('figure_3a.eps')
+    plt.show()
+
+
+    # Figure 3b
+    figure_3b_data = data['figure_3b_data']
+    figure_3b_xdata = figure_3b_data[0]
+    figure_3b_1 = figure_3b_data[1]
+    figure_3b_2 = figure_3b_data[2]
+    figure_3b_3 = figure_3b_data[3]
+    figure_3b_4 = figure_3b_data[4]
+
+    plt.scatter(figure_3b_xdata,figure_3b_1)
+    plt.plot(figure_3b_xdata,figure_3b_1, label = 'Schedule 1')
+    plt.scatter(figure_3b_xdata, figure_3b_2)
+    plt.plot(figure_3b_xdata, figure_3b_2, label = 'Schedule 2')
+    plt.scatter(figure_3b_xdata, figure_3b_3)
+    plt.plot(figure_3b_xdata, figure_3b_3, label = 'Schedule 3')
+    plt.scatter(figure_3b_xdata, figure_3b_4)
+    plt.plot(figure_3b_xdata, figure_3b_4, label = 'Schedule 4')
+    plt.legend()
+    plt.xlabel('Test sensitivity')
+    plt.ylabel('Probability of detection within 7 days')
+    plt.title('Testing daily')
+    plt.ylim(0.5,1.05)
+    plt.savefig('figure_3b.eps')
+    plt.show()
+    
+
 exponential_model_plotting()
 abm_plotting()
