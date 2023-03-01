@@ -198,7 +198,7 @@ def ABM_model_def(R0, roster,test_sensitivity,test_schedule, asymp_fraction):
         params['test_report_delay'] = 0
 
     # timing for simulation
-    max_time = 200 #days?
+    max_time = 100 #days?
 
     dt = 0.25
 
@@ -245,8 +245,7 @@ def ABM_simulation(R0, roster, test_sensitivity, test_schedule,simulations,asymp
     # results = [i for i in results if i >= 0]
     # time_to_detection = np.average(results)
     time_to_detection = 0
-    # time_to_detection = [np.average(results), np.percentile(results,95)]
-    prob_of_detection_7_days = sum([1 for x in results if (x <= 7 and x > 0)])/len(results)
+    prob_of_detection_7_days = sum([1 for x in results if (x <= 14 and x > 0)])/len(results)
     return time_to_detection, prob_of_detection_7_days
 
 def calculate_beta(R0, N):
@@ -397,7 +396,7 @@ def main():
     
     # comparing exponential model and abm (Figure 2)
     # exponential assumptions
-    compare_exp_ABM(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1, Path(__file__).parent/"Data_and_Plotting"/'figure_2a_data.csv')
+    compare_exp_ABM(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1, Path(__file__).parent/"Data_and_Plotting"/'14_day_abm.csv')
     # ABM assumptions
     compare_exp_ABM(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1/3, Path(__file__).parent/"Data_and_Plotting"/'figure_2b_data.csv')
 

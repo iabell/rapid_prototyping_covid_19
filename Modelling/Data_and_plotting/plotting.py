@@ -16,7 +16,7 @@ def load_data():
         data.update({'figure_1a_data': [[float(x) for x in el] for el in list(reader)]}) 
     
     # Figure 1b
-    with open(Path(__file__).parent/'figure_1b_data.csv') as f:
+    with open(Path(__file__).parent/'14_days.csv') as f:
         reader = csv.reader(f)
         data.update({'figure_1b_data': [[float(x) for x in el] for el in list(reader)]})
 
@@ -26,7 +26,7 @@ def load_data():
         data.update({'supp_figure_data': [[float(x) for x in el] for el in list(reader)]})
 
     # Figure 2a
-    with open(Path(__file__).parent/'figure_2a_data.csv') as f:
+    with open(Path(__file__).parent/'14_day_abm.csv') as f:
         reader = csv.reader(f)
         data.update({'figure_2a_data': [[float(x) for x in el] for el in list(reader)]})
 
@@ -135,10 +135,10 @@ def abm_plotting():
     plt.plot(figure_2a_xdata , figure_2a_7, label = 'Tested daily')
     plt.plot(figure_1b_xdata , figure_1b_7, 'C2--')
     plt.xlabel('Test sensitivity')
-    plt.ylabel('Probability of detection within 7 days')
+    plt.ylabel('Probability of detection within 14 days')
     plt.legend()
     plt.ylim(0,1.05)
-    plt.savefig(Path(__file__).parent.parent.parent/'Figures'/'figure_2a.eps')
+    # plt.savefig(Path(__file__).parent.parent.parent/'Figures'/'figure_2a.eps')
     plt.show()
 
 
@@ -213,5 +213,5 @@ def abm_plotting():
     plt.show()
     
 
-exponential_model_plotting()
+# exponential_model_plotting()
 abm_plotting()
