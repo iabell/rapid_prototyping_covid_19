@@ -16,7 +16,7 @@ def load_data():
         data.update({'figure_1a_data': [[float(x) for x in el] for el in list(reader)]}) 
     
     # Figure 1b
-    with open(Path(__file__).parent/'figure_1b_data.csv') as f:
+    with open(Path(__file__).parent/'14_days.csv') as f:
         reader = csv.reader(f)
         data.update({'figure_1b_data': [[float(x) for x in el] for el in list(reader)]})
 
@@ -26,7 +26,7 @@ def load_data():
         data.update({'supp_figure_data': [[float(x) for x in el] for el in list(reader)]})
 
     # Figure 2a
-    with open(Path(__file__).parent/'figure_2a_data.csv') as f:
+    with open(Path(__file__).parent/'14_day_abm.csv') as f:
         reader = csv.reader(f)
         data.update({'figure_2a_data': [[float(x) for x in el] for el in list(reader)]})
 
@@ -67,7 +67,7 @@ def exponential_model_plotting():
     plt.ylim(0, 1.05)
     plt.xticks(fontsize = 12)
     plt.yticks(fontsize = 12)
-    plt.savefig('./figure_1a.eps') 
+    plt.savefig(Path(__file__).parent.parent.parent/'Figures'/'figure_1a.eps') 
     plt.show()
 
 
@@ -86,7 +86,7 @@ def exponential_model_plotting():
     plt.ylim(0,1.05)
     plt.xticks(fontsize = 12)
     plt.yticks(fontsize = 12)
-    plt.savefig('./figure_1b.eps') 
+    plt.savefig(Path(__file__).parent.parent.parent/'Figures'/'figure_1b.eps') 
     plt.show()
 
 
@@ -102,7 +102,7 @@ def exponential_model_plotting():
     plt.fill_between(supp_figure_xdata, min_probs, max_probs,alpha = .25, color = 'b')
     plt.xlabel('Number of times testing occurs per week', fontsize = 14)
     plt.ylabel('Probability of detection', fontsize = 14)
-    plt.savefig('./supp_figure.eps')
+    plt.savefig(Path(__file__).parent.parent.parent/'Figures'/'supp_figure.eps')
     plt.show()
 
 def abm_plotting():
@@ -118,26 +118,27 @@ def abm_plotting():
 
     # Exponential model data
     figure_1b_data = data['figure_1b_data']
+    figure_1b_xdata = figure_1b_data[0]
     figure_1b_1 = figure_1b_data[1]
     figure_1b_3 = figure_1b_data[2]
     figure_1b_7 = figure_1b_data[3]
 
-    plt.scatter([],[],'k', label = 'ABM')
+    plt.scatter([],[],c = 'k', label = 'ABM')
     plt.plot([],[],'k--', label = 'Exponential model')
     plt.scatter(figure_2a_xdata,figure_2a_1)
     plt.plot(figure_2a_xdata ,figure_2a_1, label = 'Tested once per week')
-    plt.plot(figure_2a_xdata , figure_1b_1, 'C0--')
+    plt.plot(figure_1b_xdata , figure_1b_1, 'C0--')
     plt.scatter(figure_2a_xdata , figure_2a_3)
     plt.plot(figure_2a_xdata , figure_2a_3, label = 'Tested three times per week')
-    plt.plot(figure_2a_xdata , figure_1b_3, 'C1--')
+    plt.plot(figure_1b_xdata , figure_1b_3, 'C1--')
     plt.scatter(figure_2a_xdata , figure_2a_7)
     plt.plot(figure_2a_xdata , figure_2a_7, label = 'Tested daily')
-    plt.plot(figure_2a_xdata , figure_1b_7, 'C2--')
+    plt.plot(figure_1b_xdata , figure_1b_7, 'C2--')
     plt.xlabel('Test sensitivity')
-    plt.ylabel('Probability of detection within 7 days')
+    plt.ylabel('Probability of detection within 14 days')
     plt.legend()
     plt.ylim(0,1.05)
-    plt.savefig('figure_2a.eps')
+    # plt.savefig(Path(__file__).parent.parent.parent/'Figures'/'figure_2a.eps')
     plt.show()
 
 
@@ -158,7 +159,7 @@ def abm_plotting():
     plt.ylabel('Probability of detection within 7 days')
     plt.legend()
     plt.ylim(0,1.05)
-    plt.savefig('figure_2b.eps')
+    plt.savefig(Path(__file__).parent.parent.parent/'Figures'/'figure_2b.eps')
     plt.show()
 
 
@@ -183,7 +184,7 @@ def abm_plotting():
     plt.ylabel('Probability of detection within 7 days')
     plt.title('Testing 3 times per week')
     plt.ylim(0.5,1.05)
-    plt.savefig('figure_3a.eps')
+    plt.savefig(Path(__file__).parent.parent.parent/'Figures'/'figure_3a.eps')
     plt.show()
 
 
@@ -208,9 +209,9 @@ def abm_plotting():
     plt.ylabel('Probability of detection within 7 days')
     plt.title('Testing daily')
     plt.ylim(0.5,1.05)
-    plt.savefig('figure_3b.eps')
+    plt.savefig(Path(__file__).parent.parent.parent/'Figures'/'figure_3b.eps')
     plt.show()
     
 
-exponential_model_plotting()
+# exponential_model_plotting()
 abm_plotting()

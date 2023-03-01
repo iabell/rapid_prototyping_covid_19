@@ -10,12 +10,13 @@ import csv
 # model definition
 def simple_exponential_growth(initial_population=1, r_eff=1.5, generation_interval=4.7):
     daily_multiplier = r_eff ** (1 / generation_interval)
-    prev_list = [initial_population * (daily_multiplier ** day) for day in range(7)]
+    # parameter to change if we want to compare non-week timeframes
+    prev_list = [initial_population * (daily_multiplier ** day) for day in range(14)]
     return prev_list
 
 # detection probability definition
 def detection_probability(test_schedule, prevalence, sensitivity):
-    probability_of_detection = 1 - np.prod([(1 - sensitivity)**(prevalence[i]) if test_schedule[i]!=0 else 1 for i in range(len(prevalence))])
+    probability_of_detection = 1 - np.prod([(1 - sensitivity)**(prevalence[i]) if test_schedule[i%7]!=0 else 1 for i in range(len(prevalence))])
     return probability_of_detection
 
 # creating weekly schedule permutations
@@ -59,6 +60,7 @@ def varying_sensitivity(endpoints, step, Reff, I0, generation_interval, testing_
     output = []
 
     # generating schedules and prevalence
+    # longer time frame when looking at more than a week
     testing_schedules = weekly_schedule_permutations(testing_days_per_week)
     prevalence_list = simple_exponential_growth(I0, Reff, generation_interval)
 
@@ -113,10 +115,10 @@ sensitivity_options = [0.65, 0.75, 0.85, 0.95]
 for option in sensitivity_options:
     figure_1a_data.append(varying_growth_rate([1.0, 2.4], 0.01, I0, generation_interval, testing_days_per_week, option))
 
-with open("figure_1a_data.csv", 'w') as f:
-    write = csv.writer(f)
-    write.writerow(figure_1a_xdata)
-    write.writerows(figure_1a_data)
+# with open("figure_1a_data.csv", 'w') as f:
+#     write = csv.writer(f)
+#     write.writerow(figure_1a_xdata)
+#     write.writerows(figure_1a_data)
 
 # checking plots are fine 
 plt.figure("2")
@@ -128,8 +130,8 @@ plt.legend(['Test sensitivity = 0.65', 'Test sensitivity = 0.75', 'Test sensitiv
 plt.ylim(0, 1.05)
 plt.xticks(fontsize = 12)
 plt.yticks(fontsize = 12)
-plt.savefig('reff_sens_high_7') 
-plt.show()
+# plt.savefig('reff_sens_high_7') 
+# plt.show()
 
 
 # Figure 1b data 
@@ -141,7 +143,7 @@ testing_days= [1, 3, 7]
 for days in testing_days:
     figure_1b_data.append(varying_sensitivity([0.4, 1.01], 0.01, Reff, I0, generation_interval, days))
 
-with open("figure_1b_data.csv", 'w') as f:
+with open("14_days.csv", 'w') as f:
     write = csv.writer(f)
     write.writerow(figure_1b_xdata)
     write.writerows(figure_1b_data)
@@ -149,11 +151,11 @@ with open("figure_1b_data.csv", 'w') as f:
 plt.figure("1")
 plt.plot(figure_1b_xdata, figure_1b_data[0],figure_1b_xdata, figure_1b_data[1],figure_1b_xdata, figure_1b_data[2])
 plt.xlabel('Test sensitivity', fontsize = 14)
-plt.ylabel('Probability of detection within 7 days', fontsize = 14)
+plt.ylabel('Probability of detection within 2 days', fontsize = 14)
 plt.title('Exponential Model',fontsize = 14)
 plt.legend(['Weekly testing', '3/week testing', 'Daily testing'],fontsize =12)
 plt.ylim(0,1.05)
-plt.savefig('test_sens_high_7') 
+# plt.savefig('test_sens_high_7') 
 plt.xticks(fontsize = 12)
 plt.yticks(fontsize = 12)
 plt.show()

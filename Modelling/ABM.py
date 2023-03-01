@@ -198,7 +198,7 @@ def ABM_model_def(R0, roster,test_sensitivity,test_schedule, asymp_fraction):
         params['test_report_delay'] = 0
 
     # timing for simulation
-    max_time = 200 #days?
+    max_time = 100 #days?
 
     dt = 0.25
 
@@ -242,10 +242,10 @@ def ABM_simulation(R0, roster, test_sensitivity, test_schedule,simulations,asymp
         results.append(ABM_model_def(R0, roster,test_sensitivity,schedule_sim,asymp_fraction))
 
     #disregard results if outbreak dies out 
-    results = [i for i in results if i >= 0]
-    time_to_detection = np.average(results)
-    # time_to_detection = [np.average(results), np.percentile(results,95)]
-    prob_of_detection_7_days = sum([1 for x in results if x <= 7])/len(results)
+    # results = [i for i in results if i >= 0]
+    # time_to_detection = np.average(results)
+    time_to_detection = 0
+    prob_of_detection_7_days = sum([1 for x in results if (x <= 14 and x > 0)])/len(results)
     return time_to_detection, prob_of_detection_7_days
 
 def calculate_beta(R0, N):
@@ -336,16 +336,22 @@ def calculate_beta(R0, N):
     return slope, intercept
 
 
-def test_sensitivity_test_schedule(R0, roster,test_sensitivity_varying,test_schedule,simulations,asymp_fraction):
+def compare_exp_ABM(R0, roster,test_sensitivity_varying,test_schedule,simulations,asymp_fraction, file_name):
     pr_list= [[],[],[]]
 
 
     thing = range(len(test_schedule))
 
-    for i in tqdm(range(len(test_schedule))):
+    for i in range(len(test_schedule)):
         for sensitivity in test_sensitivity_varying:
             results = ABM_simulation(R0, roster,sensitivity,test_schedule[i],simulations,asymp_fraction)
             pr_list[i].append(results[1])
+
+
+    with open(file_name, 'w') as f:
+        write = csv.writer(f)
+        write.writerow(test_sensitivity_varying)
+        write.writerows(pr_list)
 
 
     # exponential results on same plot 
@@ -357,26 +363,9 @@ def test_sensitivity_test_schedule(R0, roster,test_sensitivity_varying,test_sche
         for row in data:
             data_exp.append([float(x) for x in row])
 
-    plt.scatter([-1],[0],c = 'k', label = 'ABM')
-    plt.plot([],[],'k--', label = 'Exponential model')
-    plt.scatter(test_sensitivity_varying,pr_list[0])
-    plt.plot(test_sensitivity_varying,pr_list[0], label = 'Tested once per week')
-    plt.plot(xdata, data_exp[1], 'C0--')
-    plt.scatter(test_sensitivity_varying, pr_list[1])
-    plt.plot(test_sensitivity_varying, pr_list[1], label = 'Tested three times per week')
-    plt.plot(xdata, data_exp[2], 'C1--')
-    plt.scatter(test_sensitivity_varying, pr_list[2])
-    plt.plot(test_sensitivity_varying, pr_list[2], label = 'Tested daily')
-    plt.plot(xdata, data_exp[3], 'C2--')
-    plt.xlabel('Test sensitivity')
-    plt.ylabel('Probability of detection within 7 days')
-    plt.legend()
-    plt.ylim(0,1.05)
-    plt.xlim(0.38,1.02)
-    plt.savefig('test_2.eps')
-    plt.show()
 
-def exponential_model_test_sensitivity_work_schedule(R0, rosters,test_sensitivity_varying,test_schedule,simulations,plot_title):
+
+def intermittent_schedule(R0, rosters,test_sensitivity_varying,test_schedule,simulations,file_name):
     pr_list = [[],[],[],[]]
     asymp_fraction = 1/3
 
@@ -385,92 +374,10 @@ def exponential_model_test_sensitivity_work_schedule(R0, rosters,test_sensitivit
             results = ABM_simulation(R0, rosters[i],sensitivity,test_schedule[0],simulations,asymp_fraction)
             pr_list[i].append(results[1])
 
-    plt.scatter(test_sensitivity_varying,pr_list[0])
-    plt.plot(test_sensitivity_varying,pr_list[0], label = 'Schedule 1')
-    plt.scatter(test_sensitivity_varying, pr_list[1])
-    plt.plot(test_sensitivity_varying, pr_list[1], label = 'Schedule 2')
-    plt.scatter(test_sensitivity_varying, pr_list[2])
-    plt.plot(test_sensitivity_varying, pr_list[2], label = 'Schedule 3')
-    plt.scatter(test_sensitivity_varying, pr_list[3])
-    plt.plot(test_sensitivity_varying, pr_list[3], label = 'Schedule 4')
-    plt.legend()
-    plt.xlabel('Test sensitivity')
-    plt.ylabel('Probability of detection within 7 days')
-    plt.title(plot_title)
-    plt.ylim(0.5,1.05)
-    plt.savefig('figure_3b.eps')
-    plt.show()
-
-
-def reff_test_sensitivity(Reff_options, roster,test_sensitivity,test_schedule,simulations,asymp_fraction):
-    pr_list_1 = []
-    pr_list_2 = []
-    pr_list_3 = []
-    pr_list_4 = []
-    
-    for Reff in Reff_options:
-        results = ABM_simulation(Reff, roster,test_sensitivity[0],test_schedule,simulations,asymp_fraction)
-        pr_list_1.append(results[1])
-
-    for Reff in Reff_options:
-        results = ABM_simulation(Reff, roster,test_sensitivity[1],test_schedule,simulations,asymp_fraction)
-        pr_list_2.append(results[1])
-
-    for Reff in Reff_options:
-        results = ABM_simulation(Reff, roster,test_sensitivity[2],test_schedule,simulations,asymp_fraction)
-        pr_list_3.append(results[1])
-
-    for Reff in Reff_options:
-        results = ABM_simulation(Reff, roster,test_sensitivity[3],test_schedule,simulations,asymp_fraction)
-        pr_list_4.append(results[1])
-
-    plt.plot(Reff_options,pr_list_1)
-    plt.plot(Reff_options, pr_list_2)
-    plt.plot(Reff_options, pr_list_3)
-    plt.plot(Reff_options, pr_list_4)
-    # plt.xlabel('Reff')
-    plt.ylabel('Probability of detection within 7 days')
-    plt.legend(['Test sensitivity = 0.95', 'Test sensitivity = 0.85', 'Test sensitivity = 0.75', 'Test sensitivity = 0.65'])
-    plt.title('Reff')
-    plt.savefig('exp_model_comparison_med_coverage_Reff')
-    plt.show()
-
-def figure_four_phase_b():
-    test_schedule = [1,1,1,1,1,1,1]
-    workplace_size = 120
-    asymp_fraction = 0.33
-    #7 days a week
-    roster_1 = [0,0,0,workplace_size]
-    roster_2 = [0,0,workplace_size,0]
-    roster_3 = [0,int(np.ceil(0.4*workplace_size)),int(np.floor(0.6*workplace_size)),0]
-    roster_4 = [int(np.floor(0.1*workplace_size)),int(np.ceil(0.3*workplace_size)), int(np.floor(0.6*workplace_size)),0]
-    roster = [roster_1, roster_2, roster_3, roster_4]
-
-    test_sensitivity = np.linspace(0.3, 0.95, 14)
-    R0_options = [1.1, 1.9]
-
-    roster_results = []
-    for roster_list in roster:
-        R0_results = []
-        for R0 in R0_options:
-            R0_results.append(sensitivity_results(R0, roster_list, test_sensitivity,test_schedule,asymp_fraction))
-        roster_results.append(R0_results)
-
-    plt.figure('1')
-    plt.plot(test_sensitivity,roster_results[0][0],test_sensitivity,roster_results[1][0],test_sensitivity,roster_results[2][0],test_sensitivity,roster_results[3][0])
-
-    plt.figure('2')
-    plt.plot(test_sensitivity,roster_results[0][1],test_sensitivity,roster_results[1][1],test_sensitivity,roster_results[2][1],test_sensitivity,roster_results[3][1])
-    plt.show()
-
-
-def sensitivity_results(R0,roster,test_sens,test_schedule,asymp_fraction):
-    sens_results = []
-    for sensitivity in test_sens:
-        results = ABM_simulation(R0, roster, sensitivity,test_schedule,1000,asymp_fraction)
-        sens_results.append(results)
-    return sens_results
-
+    with open(file_name, 'w') as f:
+        write = csv.writer(f)
+        write.writerow(test_sensitivity_varying)
+        write.writerows(pr_list)
 
 
 def main():
@@ -483,24 +390,16 @@ def main():
     R_eff = 1.1
     simulations = 5000
     sensitivity_options = np.linspace(0.4,1,12)
-    sensitivity_options_discrete = [0.65, 0.75, 0.85, 0.95]
 
-    Reff_options_discrete = [1.1, 1.5, 2, 2.5]
-    Reff_options = np.linspace(1.1, 2.4, 14)
-
+    # calibrating beta 
     # slope, intercept = calculate_beta(R_eff, workplace_size)
     
-    # comparing exponential model and abm - test sensitivity 
+    # comparing exponential model and abm (Figure 2)
     # exponential assumptions
-    test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1)
-    # # abm assumptions 
-    # test_sensitivity_test_schedule(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1/3)
+    compare_exp_ABM(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1, Path(__file__).parent/"Data_and_Plotting"/'14_day_abm.csv')
+    # ABM assumptions
+    compare_exp_ABM(R_eff, no_intermittency, sensitivity_options,[once_per_week,three_per_week,daily_testing], simulations,1/3, Path(__file__).parent/"Data_and_Plotting"/'figure_2b_data.csv')
 
-    # comparing exponential model and abm - reff
-    # exponential assumptions
-    # reff_test_sensitivity(Reff_options, no_intermittency, sensitivity_options_discrete, three_per_week,simulations,1)
-    # abm assumptions 
-    # reff_test_sensitivity(Reff_options, no_intermittency, sensitivity_options_discrete, three_per_week,simulations,1/3)
 
     # intermittent testing scheduling 
     roster_1 = [int(x*workplace_size) for x in [0,0,0,1]]
@@ -510,11 +409,11 @@ def main():
     Reff = 1.1
 
     # testing 3 times/week
-    plot_title = 'Testing 3 times per week'
-    # exponential_model_test_sensitivity_work_schedule(Reff, [roster_1,roster_2,roster_3,roster_4],sensitivity_options,[three_per_week],simulations,plot_title)
+    file_name = Path(__file__).parent/"Data_and_Plotting"/'figure_3a_data.csv'
+    intermittent_schedule(Reff, [roster_1,roster_2,roster_3,roster_4],sensitivity_options,[three_per_week],simulations,file_name)
 
     # testing daily 
-    plot_title = 'Testing daily'
-    exponential_model_test_sensitivity_work_schedule(Reff, [roster_1,roster_2,roster_3,roster_4],sensitivity_options,[daily_testing],simulations,plot_title)
+    file_name = Path(__file__).parent/"Data_and_Plotting"/'figure_3b_data.csv'
+    intermittent_schedule(Reff, [roster_1,roster_2,roster_3,roster_4],sensitivity_options,[daily_testing],simulations,file_name)
 
 main()
